@@ -10,38 +10,26 @@
     body {
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
     }
-
-    .chart-container {
-      position: relative;
-      width: 100%;
-      max-width: 100%;
-      height: auto;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-
     canvas {
-      width: 100% !important;
-      height: auto !important;
+      display: block;
+      width: 50vw !important;
+      height: 50vh !important;
     }
   </style>
 </head>
 <body>
-  <div class="chart-container">
-    <canvas id="myChart"></canvas>
-  </div>
+  <canvas id="myChart"></canvas>
 
   <script>
-    // Firebase config
+    // 1. Firebase config (ganti sesuai milikmu)
     const firebaseConfig = {
-      databaseURL: "https://potensio-a3941-default-rtdb.firebaseio.com/"
+      databaseURL: "https://potensio-af97e-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Inisialisasi chart
+    // 2. Inisialisasi chart kosong
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -57,7 +45,6 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
         animation: false,
         scales: {
           x: {
@@ -77,11 +64,11 @@
       }
     });
 
-    // Sliding window
+    // 3. Buat window sliding 8 titik
     let counter = 0;
 
     function updateChart(value) {
-      const timestamp = counter * 5;
+      const timestamp = counter * 5; // detik (tiap 5 detik)
       chart.data.labels.push(timestamp + "s");
       chart.data.datasets[0].data.push(value);
       counter++;
@@ -94,15 +81,13 @@
       chart.update();
     }
 
-    // Update setiap 5 detik
+    // 4. Ambil nilai terbaru setiap 5 detik
     setInterval(() => {
       db.ref("Potensio/latest").get().then((snapshot) => {
         const nilai = snapshot.val();
-        if (nilai !== null) {
-          updateChart(nilai);
-        }
+        updateChart(nilai);
       });
-    }, 5000);
+    }, 5000); // 5000 ms = 5 detik
   </script>
 </body>
 </html>
