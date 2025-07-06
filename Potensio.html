@@ -10,26 +10,38 @@
     body {
       margin: 0;
       padding: 0;
+      font-family: sans-serif;
     }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
     canvas {
-      display: block;
-      width: 100vw !important;
-      height: 100vh !important;
+      width: 100% !important;
+      height: auto !important;
     }
   </style>
 </head>
 <body>
-  <canvas id="myChart"></canvas>
+  <div class="chart-container">
+    <canvas id="myChart"></canvas>
+  </div>
 
   <script>
-    // 1. Firebase config (ganti sesuai milikmu)
+    // Firebase config
     const firebaseConfig = {
       databaseURL: "https://potensio-a3941-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. Inisialisasi chart kosong
+    // Inisialisasi chart
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -45,6 +57,7 @@
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         animation: false,
         scales: {
           x: {
@@ -64,11 +77,11 @@
       }
     });
 
-    // 3. Buat window sliding 8 titik
+    // Sliding window
     let counter = 0;
 
     function updateChart(value) {
-      const timestamp = counter * 5; // detik (tiap 5 detik)
+      const timestamp = counter * 5;
       chart.data.labels.push(timestamp + "s");
       chart.data.datasets[0].data.push(value);
       counter++;
@@ -81,13 +94,15 @@
       chart.update();
     }
 
-    // 4. Ambil nilai terbaru setiap 5 detik
+    // Update setiap 5 detik
     setInterval(() => {
       db.ref("Potensio/latest").get().then((snapshot) => {
         const nilai = snapshot.val();
-        updateChart(nilai);
+        if (nilai !== null) {
+          updateChart(nilai);
+        }
       });
-    }, 5000); // 5000 ms = 5 detik
+    }, 5000);
   </script>
 </body>
 </html>
