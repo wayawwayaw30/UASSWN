@@ -7,19 +7,37 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
+      font-family: sans-serif;
+      background-color: #f9f9f9;
     }
+
+    .chart-container {
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+    }
+
     canvas {
-      display: block;
-      width: 100vw !important;
-      height: 100vh !important;
+      width: 100% !important;
+      max-width: 100%;
+      height: auto !important;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
-  <canvas id="myChart"></canvas>
+  <div class="chart-container">
+    <canvas id="myChart"></canvas>
+  </div>
 
   <script>
     // 1. Firebase config (ganti sesuai milikmu)
@@ -29,7 +47,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. Inisialisasi chart kosong
+    // 2. Inisialisasi chart
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -45,6 +63,7 @@
       },
       options: {
         responsive: true,
+        maintainAspectRatio: true,
         animation: false,
         scales: {
           x: {
@@ -60,15 +79,24 @@
               text: 'Nilai ADC'
             }
           }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              font: {
+                size: 14
+              }
+            }
+          }
         }
       }
     });
 
-    // 3. Buat window sliding 8 titik
+    // 3. Sliding window 8 titik
     let counter = 0;
 
     function updateChart(value) {
-      const timestamp = counter * 5; // detik (tiap 5 detik)
+      const timestamp = counter * 5;
       chart.data.labels.push(timestamp + "s");
       chart.data.datasets[0].data.push(value);
       counter++;
@@ -81,13 +109,15 @@
       chart.update();
     }
 
-    // 4. Ambil nilai terbaru setiap 5 detik
+    // 4. Ambil data tiap 5 detik
     setInterval(() => {
       db.ref("Potensio/latest").get().then((snapshot) => {
         const nilai = snapshot.val();
-        updateChart(nilai);
+        if (nilai !== null) {
+          updateChart(nilai);
+        }
       });
-    }, 5000); // 5000 ms = 5 detik
+    }, 5000);
   </script>
 </body>
 </html>
