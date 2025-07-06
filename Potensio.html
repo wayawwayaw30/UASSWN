@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtime Monitoring ESP32</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    }
+
+    header {
+      background-color: #009688;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .chart-container {
+      margin: 20px;
+      padding: 16px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>📊 Realtime Monitoring ESP32</header>
+
+  <!-- Grafik Potensio -->
+  <div class="chart-container">
+    <h3 style="text-align:center; color:#009688;">Nilai Potensio</h3>
+    <canvas id="potensioChart"></canvas>
+  </div>
+
+  <!-- Grafik DHT22 -->
+  <div class="chart-container">
+    <h3 style="text-align:center; color:#ff5722;">Sensor Suhu & Kelembaban (DHT22)</h3>
+    <canvas id="dhtChart"></canvas>
+  </div>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      databaseURL: "https://potensio-a3941-default-rtdb.firebaseio.com/"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // === CHART 1: POTENSIO ===
+    const ctxPotensio = document.getElementById('potensioChart').getContext('2d');
+    const potensioChart = new Chart(ctxPotensio, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Nilai Potensio',
+          data: [],
+          borderColor: '#009688',
+          backgroundColor: 'rgba(0,150,136,0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#009688',
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Waktu (detik)',
+              font: { size: 14 }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Nilai ADC',
+              font: { size: 14 }
+            }
+          }
+        }
+      }
+    });
+
+    let counterPotensio = 0;
+    function updatePotensioChart(value) {
+      const waktu = counterPotensio * 5;
+      potensioChart.data.labels.push(waktu + "s");
+      potensioChart.data.datasets[0].data.push(value);
+      if (potensioChart.data.labels.length > 8) {
+        potensioChart.data.labels.shift();
+        potensioChart.data.datasets[0].data.shift();
+      }
+      potensioChart.update();
+      counterPotensio++;
+    }
+
+    // === CHART 2: DHT22 ===
+    const ctxDHT = document.getElementById('dhtChart').getContext('2d');
+    const dhtChart = new Chart(ctxDHT, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Suhu (°C)',
+            data: [],
+            borderColor: '#ff5722',
+            backgroundColor: 'rgba(255,87,34,0.1)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#ff5722',
+            tension: 0.4
+          },
+          {
+            label: 'Kelembaban (%)',
+            data: [],
+            borderColor: '#03a9f4',
+            backgroundColor: 'rgba(3,169,244,0.1)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#03a9f4',
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Waktu (detik)',
+              font: { size: 14 }
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Nilai',
+              font: { size: 14 }
+            }
+          }
+        }
+      }
+    });
+
+    let counterDHT = 0;
+    function updateDHTChart(suhu, kelembaban) {
+      const waktu = counterDHT * 5;
+      dhtChart.data.labels.push(waktu + "s");
+      dhtChart.data.datasets[0].data.push(suhu);
+      dhtChart.data.datasets[1].data.push(kelembaban);
+      if (dhtChart.data.labels.length > 8) {
+        dhtChart.data.labels.shift();
+        dhtChart.data.datasets[0].data.shift();
+        dhtChart.data.datasets[1].data.shift();
+      }
+      dhtChart.update();
+      counterDHT++;
+    }
+
+    // Update data setiap 5 detik
+    setInterval(() => {
+      // Data Potensio
+      db.ref("Potensio/latest").get().then((snapshot) => {
+        const nilai = snapshot.val();
+        if (nilai !== null) {
+          updatePotensioChart(nilai);
+        }
+      });
+
+      // Data DHT22
+      db.ref("DHT22").get().then((snapshot) => {
+        const data = snapshot.val();
+        if (data && data.suhu !== undefined && data.kelembaban !== undefined) {
+          updateDHTChart(data.suhu, data.kelembaban);
+        }
+      });
+    }, 5000);
+  </script>
+</body>
+</html>
