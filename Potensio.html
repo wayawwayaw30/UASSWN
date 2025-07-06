@@ -14,40 +14,63 @@
     body {
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
-      background-color: #f9f9f9;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    }
+
+    header {
+      background-color: #009688;
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     .chart-container {
-      width: 100%;
-      height: 100%;
-      padding: 10px;
+      margin: 20px;
+      padding: 16px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: fadeIn 0.8s ease-in-out;
     }
 
     canvas {
       width: 100% !important;
-      max-width: 100%;
       height: auto !important;
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
 <body>
+
+  <header>📈 Realtime Monitoring Potensio</header>
+
   <div class="chart-container">
     <canvas id="myChart"></canvas>
   </div>
 
   <script>
-    // 1. Firebase config (ganti sesuai milikmu)
+    // Firebase config
     const firebaseConfig = {
       databaseURL: "https://potensio-a3941-default-rtdb.firebaseio.com/"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 2. Inisialisasi chart
+    // Inisialisasi chart
     const ctx = document.getElementById('myChart').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'line',
@@ -56,9 +79,12 @@
         datasets: [{
           label: 'Nilai Potensio',
           data: [],
-          borderColor: 'green',
+          borderColor: '#009688',
+          backgroundColor: 'rgba(0,150,136,0.1)',
           borderWidth: 2,
-          tension: 0.3
+          pointRadius: 4,
+          pointBackgroundColor: '#009688',
+          tension: 0.4
         }]
       },
       options: {
@@ -69,19 +95,26 @@
           x: {
             title: {
               display: true,
-              text: 'Detik'
+              text: 'Waktu (detik)',
+              font: {
+                size: 14
+              }
             }
           },
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Nilai ADC'
+              text: 'Nilai ADC',
+              font: {
+                size: 14
+              }
             }
           }
         },
         plugins: {
           legend: {
+            display: true,
             labels: {
               font: {
                 size: 14
@@ -92,7 +125,7 @@
       }
     });
 
-    // 3. Sliding window 8 titik
+    // Sliding window 8 titik
     let counter = 0;
 
     function updateChart(value) {
@@ -109,7 +142,7 @@
       chart.update();
     }
 
-    // 4. Ambil data tiap 5 detik
+    // Update setiap 5 detik
     setInterval(() => {
       db.ref("Potensio/latest").get().then((snapshot) => {
         const nilai = snapshot.val();
